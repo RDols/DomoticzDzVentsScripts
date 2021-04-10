@@ -151,15 +151,15 @@ local function UpdateDevice(domoticz, deviceType, device)
   local addWh = device.DayWh - lastDayWh
   local newWh = dzDevice.WhTotal + addWh
 
-  if device.Name == "Panel 1.0.1" or device.Name == "Panel 1.0.4" or device.Name == "Inverter 1" then
-    --LogDebug(domoticz, string.format('----- %s "%s" ----------------------------------', deviceType, device.Name))
-    --LogDebug(domoticz, string.format('Last Update: %s', os.date('%Y-%m-%d %H:%M:%S', device.LastMeasurement)))
+  if enableDebugPrint and (device.Name == "Panel 1.0.1" or device.Name == "Panel 1.0.4" or device.Name == "Inverter 1") then
+    LogDebug(domoticz, string.format('----- %s "%s" ----------------------------------', deviceType, device.Name))
+    LogDebug(domoticz, string.format('Last Update: %s', os.date('%Y-%m-%d %H:%M:%S', device.LastMeasurement)))
 
-    --LogDebug(domoticz, string.format('device.DayWh=%0.3f  lastDayWh=%0.3f  device.Watt=%0.3f  lastWatt=%0.3f', device.DayWh, lastDayWh, device.Watt, lastWatt))
-    --LogDebug(domoticz, string.format('device.DayWh - lastDayWh = addWh => %0.3f - %0.3f = %0.3f', device.DayWh, lastDayWh, addWh))
-    --LogDebug(domoticz, string.format('old.WhTotal + addWh = newWh => %0.3f + %0.3f = %0.3f', dzDevice.WhTotal, addWh, newWh))
+    LogDebug(domoticz, string.format('device.DayWh=%0.3f  lastDayWh=%0.3f  device.Watt=%0.3f  lastWatt=%0.3f', device.DayWh, lastDayWh, device.Watt, lastWatt))
+    LogDebug(domoticz, string.format('device.DayWh - lastDayWh = addWh => %0.3f - %0.3f = %0.3f', device.DayWh, lastDayWh, addWh))
+    LogDebug(domoticz, string.format('old.WhTotal + addWh = newWh => %0.3f + %0.3f = %0.3f', dzDevice.WhTotal, addWh, newWh))
 
-    --LogDebug(domoticz, string.format('OldTotal=%0.3f   DomoticzToday=%0.3f   lastDayWh=%0.3f   PanelToday=%0.3f   newWh=%0.3f', dzDevice.WhTotal, dzDevice.WhToday, lastDayWh, device.DayWh, newWh))
+    LogDebug(domoticz, string.format('OldTotal=%0.3f   DomoticzToday=%0.3f   lastDayWh=%0.3f   PanelToday=%0.3f   newWh=%0.3f', dzDevice.WhTotal, dzDevice.WhToday, lastDayWh, device.DayWh, newWh))
 
     LogDebug(domoticz, string.format('%s "%s" Today = %0.2f Wh   Now = %0.2f W', deviceType, device.Name, device.DayWh, device.Watt))
   end
