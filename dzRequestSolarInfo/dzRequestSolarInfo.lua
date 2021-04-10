@@ -1,30 +1,13 @@
 
 -- Config
 local enableDebugPrint = true
-local isDecimalComma = true -- true for 1.000,00 :: false for 1,000.00
 local username = "your@email.com"
 local password = "password"
 local siteID = "0000000"
 
--- Upvalues
-local timezoneOffset = 0
-
-
 local function LogDebug(domoticz, log)
   if enableDebugPrint then
     print(string.format('dzRequestSolarInfo : %s', log))
-  end
-end
-
-
-local function MakeCleanNumber(dirtyNumber)
-  if isDecimalComma then
-    local value = dirtyNumber:gsub("%.", "")
-    value = value:gsub(",", ".")
-    return tonumber(value)
-  else
-    local value = dirtyNumber:gsub(",", "")
-    return tonumber(value)
   end
 end
 
@@ -38,34 +21,10 @@ local function AddReportData(json, component)
 end
 
 
-local function AddReportInfo(json, component)
-  local id = tostring(component.id)
-  data = json.reportersInfo[id]
-  component.Watt = 0
-  if data then
-    if data.lastMeasurement then
-      -- Not always updated although there is new data
-      -- unixtimestamp in mSec and LOCAL time
-      component.LastMeasurement = (data.lastMeasurement / 1000) + timezoneOffset
-    else
-      component.LastMeasurement = 0
-    end
-
-    component.Name = data.name
-    for k, v in pairs(data.localizedMeasurements or {}) do
-      if string.match(k, "%[W%]") then
-        component.Watt = MakeCleanNumber(v)
-      end
-    end
-  end
-end
-
-
 local function GetOptimizerData(json, component)
   if component.data and component.data.type == "POWER_BOX" then
     local optimizer = component.data
     AddReportData(json, optimizer)
-    AddReportInfo(json, optimizer)
     return optimizer
   end
 end
@@ -75,7 +34,6 @@ local function GetStringData(json, info, component)
   if component.data and component.data.type == "STRING" then
     local powerstring = component.data
     AddReportData(json, powerstring)
-    AddReportInfo(json, powerstring)
     powerstring.Optimizers = {}
     for _, child in pairs(component.children) do
       local optimizer = GetOptimizerData(json, child)
@@ -93,7 +51,6 @@ local function GetInverterData(json, info, component)
   if component.data and (component.data.type == "INVERTER" or component.data.type == "INVERTER_3PHASE") then
     local inverter = component.data
     AddReportData(json, inverter)
-    AddReportInfo(json, inverter)
     inverter.Strings = {}
     for _, child in pairs(component.children) do
       local string = GetStringData(json, info, child)
@@ -139,6 +96,7 @@ local function UpdateDevice(domoticz, deviceType, device)
 
   local lastWatt = lastData.Watt or 0
   local lastDayWh = lastData.DayWh or 0
+  device.Watt = device.Watt or 0
 
   if device.DayWh == lastDayWh and device.Watt == lastWatt then
     return -- No new data
@@ -154,7 +112,6 @@ local function UpdateDevice(domoticz, deviceType, device)
 
   if enableDebugPrint and (device.Name == "Panel 1.0.1" or device.Name == "Panel 1.0.4" or device.Name == "Inverter 1") then
     LogDebug(domoticz, string.format('----- %s "%s" ----------------------------------', deviceType, device.Name))
-    LogDebug(domoticz, string.format('Last Update: %s', os.date('%Y-%m-%d %H:%M:%S', device.LastMeasurement)))
 
     LogDebug(domoticz, string.format('device.DayWh=%0.3f  lastDayWh=%0.3f  device.Watt=%0.3f  lastWatt=%0.3f', device.DayWh, lastDayWh, device.Watt, lastWatt))
     LogDebug(domoticz, string.format('device.DayWh - lastDayWh = addWh => %0.3f - %0.3f = %0.3f', device.DayWh, lastDayWh, addWh))
@@ -167,20 +124,6 @@ local function UpdateDevice(domoticz, deviceType, device)
   dzDevice.updateElectricity(device.Watt, newWh)
 
   domoticz.data.LastData[device.Name] = {Watt = device.Watt, DayWh=device.DayWh}
-end
-
-
---[[----------------------------------------------------------------------------
-Timestamps in the json are local times, not UTC.
-Here we calculate the timezoneOffset upvalue.
-It has a known bug. Arround the daylight saving switch it has an error of 1 hour
---]]
-local function CalculateTimezone()
-  timezoneOffset = os.time{year=1970, month=1, day=1, hour=0}
-  local localTime = os.date("*t", os.time())
-  if localTime.isdst then
-    timezoneOffset = timezoneOffset - 3600
-  end
 end
 
 
@@ -201,8 +144,6 @@ function interface.execute(domoticz, item)
     elseif (item.isHTTPResponse) then
       LogDebug(domoticz, "-=[ Start HTTP Response ]=====================================")
       if (item.ok) then
-        CalculateTimezone()
-
         local info = { Inverters = {}, Strings = {}, Optimizers = {} }
         for _, child in pairs(item.json.logicalTree.children) do
           local inverter = GetInverterData(item.json, info, child)
