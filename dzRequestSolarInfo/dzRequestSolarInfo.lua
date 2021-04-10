@@ -181,30 +181,17 @@ local function CalculateTimezone()
 end
 
 
-return
-{
---------------------------------------------------------------------------------
-  active = true,
---------------------------------------------------------------------------------
-  on =
-  {
-    timer =
-    {
-      'every 5 minutes at civildaytime'
-    },
-    httpResponses =
-    {
-      'SolarEdgeWebResponse'
-    }
-  },
---------------------------------------------------------------------------------
-  data =
-  {
-    LastData = { initial = {} }
-  },
---------------------------------------------------------------------------------
-  execute = function(domoticz, item)
---------------------------------------------------------------------------------
+local interface = {}
+interface.active = true
+
+interface.on = {}
+interface.on.timer = {'every 1 minutes at civildaytime'}
+interface.on.httpResponses = {'SolarEdgeWebResponse'}
+
+interface.data = {}
+interface.data.LastData = { initial = {} }
+
+function interface.execute(domoticz, item)
     if (item.isTimer) then
       LogDebug(domoticz, "-=[ Start HTTP Request ]======================================")
       RequestSolardEdge(domoticz)
@@ -238,5 +225,6 @@ return
     end
 
     LogDebug(domoticz, "-=[ End ]=====================================================")
-  end
-}
+end
+
+return interface
