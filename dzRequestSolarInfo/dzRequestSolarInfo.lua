@@ -14,9 +14,9 @@ end
 
 local function AddReportData(json, component)
   local id = tostring(component.id)
-  component.DayWh = 0
+  component.DayWh = -1
   if json.reportersData[id] then
-    component.DayWh = json.reportersData[id].unscaledEnergy or 0
+    component.DayWh = json.reportersData[id].unscaledEnergy or -1
   end
 end
 
@@ -85,6 +85,10 @@ local function UpdateDevice(domoticz, deviceType, device)
 
   if not domoticz.utils.deviceExists(device.Name) then
     LogDebug(domoticz, string.format('to monitor create an dummy device type="Electric (Instant+Counter) name="%s"', device.Name))
+    return
+  end
+
+  if device.DayWh < 0 then
     return
   end
 
