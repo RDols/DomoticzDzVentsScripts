@@ -135,7 +135,7 @@ local interface = {}
 interface.active = true
 
 interface.on = {}
-interface.on.timer = {'every 1 minutes at civildaytime'}
+interface.on.timer = {'every 5 minutes at civildaytime'}
 interface.on.httpResponses = {'SolarEdgeWebResponse'}
 
 interface.data = {}
