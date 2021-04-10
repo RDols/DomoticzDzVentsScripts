@@ -108,19 +108,17 @@ end
 
 
 local function RequestSolardEdge(domoticz)
-  local authorization = string.format("%s:%s", username, password)
-  authorization = string.format("Basic %s", domoticz.utils.toBase64(authorization))
+    
+    local authorization = string.format("%s:%s", username, password)
+    authorization = string.format("Basic %s", domoticz.utils.toBase64(authorization))
 
-  local url = string.format("https://monitoring.solaredge.com/solaredge-apigw/api/sites/%s/layout/logical", siteID)
-  local headers = { ['Authorization'] = authorization }
+    local request = {}
+    request.url = string.format("https://monitoring.solaredge.com/solaredge-apigw/api/sites/%s/layout/logical", siteID) 
+    request.headers = { ['Authorization'] = authorization }
+    request.method = 'GET'
+    request.callback = 'SolarEdgeWebResponse'
 
-  domoticz.openURL(
-  {
-    url = url,
-    method = 'GET',
-    headers = headers,
-    callback = 'SolarEdgeWebResponse'
-  })
+    domoticz.openURL(request)
 end
 
 
