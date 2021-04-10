@@ -123,6 +123,9 @@ end
 
 
 local function UpdateDevice(domoticz, deviceType, device)
+  device.Name = device.Name or device.name
+  device.Name = string.gsub(device.Name, "Module", "Panel")
+
   if not domoticz.utils.deviceExists(device.Name) then
     LogDebug(domoticz, string.format('to monitor create an dummy device type="Electric (Instant+Counter) name="%s"', device.Name))
     return
