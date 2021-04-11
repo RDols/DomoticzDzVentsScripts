@@ -6,6 +6,7 @@ dzVents script for Domoticz to request optimizer data from the SolarEdge website
 2020-05-21 : Fixed issue with updating the energy usage for day statistics. (not fully tested yet)  
 2020-05-26 : Fixed issue with updating the energy usage for day statistics. (for real now)  
 2021-04-10 : SolarEdge changed their interface. Fixed the changed names. But power (Watt) is not available anymore :(  
+2021-04-12 : Found a way to get the power (Watt) from individual inverters/panels. 
 
 ## Usage
 1. Create an new dzVents script in Domoticz
