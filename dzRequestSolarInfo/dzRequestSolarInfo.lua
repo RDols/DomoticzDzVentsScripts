@@ -78,6 +78,16 @@ local function RequestLogical(domoticz)
 end
 
 
+local function RequestSystemData(domoticz, itemID)
+    local request = {}
+    request.url = string.format("https://monitoringpublic.solaredge.com/solaredge-web/p/publicSystemData?reporterId=%d&type=panel&activeTab=0&fieldId=%s&isPublic=true&locale=en_US", itemID, siteID) 
+    request.method = 'GET'
+    request.callback = 'ResponseSystemData'
+
+    domoticz.openURL(request)
+end
+
+
 local function UpdateDevice(domoticz, deviceType, device)
   device.Name = device.Name or device.name
   device.Name = string.gsub(device.Name, "Module", "Panel")
@@ -85,6 +95,10 @@ local function UpdateDevice(domoticz, deviceType, device)
   if not domoticz.utils.deviceExists(device.Name) then
     LogDebug(domoticz, string.format('to monitor create an dummy device type="Electric (Instant+Counter) name="%s"', device.Name))
     return
+  end
+  
+  if device.id then
+    RequestSystemData(domoticz, device.id)
   end
 
   local lastData = domoticz.data.LastData[device.Name]
@@ -150,6 +164,20 @@ local function OnLogicalResponse(domoticz, item)
 end
 
 
+local function OnSystemDataResponse(domoticz, item)
+    
+    local reporterId = tonumber(string.match(item.data, "var reporterId = (.-);") or "0")
+    local systemData = string.match(item.data, "SE%.systemData = (.-);") or "{}"
+    local json = domoticz.utils.fromJSON(systemData)
+    
+    local device = {}
+    device.Name = json.description
+    device.Watt = tonumber(json.measurements["Power [W]"] or json.measurements["P AC [W]"] or "-1")
+    UpdateDevice(domoticz, "", device)
+    LogDebug(domoticz, string.format("%d %s : %0.3f Watt", reporterId, device.Name, device.Watt))
+end
+
+
 --[[ ======================================================================== ]]
 local interface = {}
 interface.active = true
@@ -170,6 +198,8 @@ function interface.execute(domoticz, item)
       if (item.ok) then
         if item.callback == "ResponseLogical" then
           OnLogicalResponse(domoticz, item)
+        elseif item.callback == "ResponseSystemData" then
+          OnSystemDataResponse(domoticz, item)
         end
       else
         LogDebug(domoticz, string.format("Error in HTTP request. Error %d - %s", item.statusCode, item.statusText))
