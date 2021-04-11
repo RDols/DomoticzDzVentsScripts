@@ -14,9 +14,8 @@ end
 
 local function AddReportData(json, component)
   local id = tostring(component.id)
-  component.DayWh = -1
   if json.reportersData[id] then
-    component.DayWh = json.reportersData[id].unscaledEnergy or -1
+    component.DayWh = json.reportersData[id].unscaledEnergy
   end
 end
 
@@ -88,10 +87,6 @@ local function UpdateDevice(domoticz, deviceType, device)
     return
   end
 
-  if device.DayWh < 0 then
-    return
-  end
-
   local lastData = domoticz.data.LastData[device.Name]
   if lastData == nil then
     domoticz.data.LastData[device.Name] = {Watt = device.Watt, DayWh=device.DayWh}
@@ -100,7 +95,8 @@ local function UpdateDevice(domoticz, deviceType, device)
 
   local lastWatt = lastData.Watt or 0
   local lastDayWh = lastData.DayWh or 0
-  device.Watt = device.Watt or 0
+  device.Watt = device.Watt or lastWatt
+  device.DayWh = device.DayWh or lastDayWh
 
   if device.DayWh == lastDayWh and device.Watt == lastWatt then
     return -- No new data
