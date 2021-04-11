@@ -63,7 +63,7 @@ local function GetInverterData(json, info, component)
 end
 
 
-local function RequestSolardEdge(domoticz)
+local function RequestLogical(domoticz)
     
     local authorization = string.format("%s:%s", username, password)
     authorization = string.format("Basic %s", domoticz.utils.toBase64(authorization))
@@ -72,7 +72,7 @@ local function RequestSolardEdge(domoticz)
     request.url = string.format("https://monitoring.solaredge.com/solaredge-apigw/api/sites/%s/layout/logical", siteID) 
     request.headers = { ['Authorization'] = authorization }
     request.method = 'GET'
-    request.callback = 'SolarEdgeWebResponse'
+    request.callback = 'ResponseLogical'
 
     domoticz.openURL(request)
 end
@@ -127,12 +127,36 @@ local function UpdateDevice(domoticz, deviceType, device)
 end
 
 
+local function OnLogicalResponse(domoticz, item)
+    local info = { Inverters = {}, Strings = {}, Optimizers = {} }
+    for _, child in pairs(item.json.logicalTree.children) do
+      local inverter = GetInverterData(item.json, info, child)
+      if inverter then
+        table.insert(info.Inverters, inverter)
+      end
+    end
+    
+    for _, device in ipairs(info.Inverters) do
+      UpdateDevice(domoticz, "Inverter", device)
+    end
+    
+    for _, device in ipairs(info.Strings) do
+      UpdateDevice(domoticz, "String", device)
+    end
+    
+    for _, device in ipairs(info.Optimizers) do
+      UpdateDevice(domoticz, "Optimizer", device)
+    end
+end
+
+
+--[[ ======================================================================== ]]
 local interface = {}
 interface.active = true
 
 interface.on = {}
 interface.on.timer = {'every 5 minutes at civildaytime'}
-interface.on.httpResponses = {'SolarEdgeWebResponse'}
+interface.on.httpResponses = {'ResponseLogical', 'ResponseSystemData'}
 
 interface.data = {}
 interface.data.LastData = { initial = {} }
@@ -140,28 +164,12 @@ interface.data.LastData = { initial = {} }
 function interface.execute(domoticz, item)
     if (item.isTimer) then
       LogDebug(domoticz, "-=[ Start HTTP Request ]======================================")
-      RequestSolardEdge(domoticz)
+      RequestLogical(domoticz)
     elseif (item.isHTTPResponse) then
       LogDebug(domoticz, "-=[ Start HTTP Response ]=====================================")
       if (item.ok) then
-        local info = { Inverters = {}, Strings = {}, Optimizers = {} }
-        for _, child in pairs(item.json.logicalTree.children) do
-          local inverter = GetInverterData(item.json, info, child)
-          if inverter then
-            table.insert(info.Inverters, inverter)
-          end
-        end
-
-        for _, device in ipairs(info.Inverters) do
-          UpdateDevice(domoticz, "Inverter", device)
-        end
-
-        for _, device in ipairs(info.Strings) do
-          UpdateDevice(domoticz, "String", device)
-        end
-
-        for _, device in ipairs(info.Optimizers) do
-          UpdateDevice(domoticz, "Optimizer", device)
+        if item.callback == "ResponseLogical" then
+          OnLogicalResponse(domoticz, item)
         end
       else
         LogDebug(domoticz, string.format("Error in HTTP request. Error %d - %s", item.statusCode, item.statusText))
