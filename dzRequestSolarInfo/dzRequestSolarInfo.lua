@@ -79,12 +79,14 @@ end
 
 
 local function RequestSystemData(domoticz, itemID)
-    local request = {}
-    request.url = string.format("https://monitoringpublic.solaredge.com/solaredge-web/p/publicSystemData?reporterId=%d&type=panel&activeTab=0&fieldId=%s&isPublic=true&locale=en_US", itemID, siteID) 
-    request.method = 'GET'
-    request.callback = 'ResponseSystemData'
+  if itemID == nil then return end
 
-    domoticz.openURL(request)
+  local request = {}
+  request.url = string.format("https://monitoringpublic.solaredge.com/solaredge-web/p/publicSystemData?reporterId=%d&type=panel&activeTab=0&fieldId=%s&isPublic=true&locale=en_US", itemID, siteID) 
+  request.method = 'GET'
+  request.callback = 'ResponseSystemData'
+
+  domoticz.openURL(request)
 end
 
 
@@ -96,14 +98,11 @@ local function UpdateDevice(domoticz, deviceType, device)
     LogDebug(domoticz, string.format('to monitor create an dummy device type="Electric (Instant+Counter) name="%s"', device.Name))
     return
   end
-  
-  if device.id then
-    RequestSystemData(domoticz, device.id)
-  end
 
   local lastData = domoticz.data.LastData[device.Name]
   if lastData == nil then
     domoticz.data.LastData[device.Name] = {Watt = device.Watt, DayWh=device.DayWh}
+    RequestSystemData(domoticz, device.id)
     return
   end
 
@@ -115,6 +114,8 @@ local function UpdateDevice(domoticz, deviceType, device)
   if device.DayWh == lastDayWh and device.Watt == lastWatt then
     return -- No new data
   end
+  
+  RequestSystemData(domoticz, device.id)
 
   if device.DayWh < lastDayWh  then
     lastDayWh = 0 -- Most likely a new day
