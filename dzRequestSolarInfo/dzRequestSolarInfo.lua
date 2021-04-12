@@ -172,7 +172,13 @@ local function OnSystemDataResponse(domoticz, item)
     
     local device = {}
     device.Name = json.description
-    device.Watt = tonumber(json.measurements["Power [W]"] or json.measurements["P AC [W]"] or "-1")
+
+    local powerstring = json.measurements["Power [W]"] or json.measurements["P AC [W]"]
+    if powerstring == nil then
+        return
+    end
+    powerstring = string.gsub(powerstring, ',', '')
+    device.Watt = tonumber(powerstring)
     UpdateDevice(domoticz, "", device)
     LogDebug(domoticz, string.format("%d %s : %0.3f Watt", reporterId, device.Name, device.Watt))
 end
